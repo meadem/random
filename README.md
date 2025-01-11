@@ -7,7 +7,7 @@ Currently, the following states are available: OR, WA, CA, WI, CT
 
 Taken into account for the comparison are:
 - monetary compensation
-- state income tax
+- state income tax (filing Single only, for now) 
 - local cost-of-living (using the [Forbes 2025 Cost of Living Calculator](https://www.forbes.com/advisor/mortgages/real-estate/cost-of-living-calculator/))
 -----------------------------
 
@@ -51,8 +51,8 @@ prospect = compare(OFFER, STATE, COL_DIFFERENCE,
 prospect.report()
 ```
 
-Which produces the following print-out 
+Which produces the following print-out. AIF is Adjusted Income Factor, a term that I made up so I could store and retrieve the quantitative estimate of the comparison.
 
-(NOTE: AIF is Adjusted Income Factor, a term that I made up so I could store and retrieve the quantitative estimate of the comparison.) 
+**Also note the last line, which shows the most important result, the change in effective take-home cash.**
 
 ![image](https://github.com/user-attachments/assets/b4caa0b8-1523-4ba9-8909-4a9145adda1c)
