@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 To add:
  - social security deduction?
  - print method for exporting calculated values and saving them
+# it would be cool to have a method that figures out how much you'd have to make in a new state to match your current cash
 
 """
 
@@ -118,11 +119,12 @@ class income_comparison():
 
     def state_tax_burden(self, income, state="CA", status="single"):
         """
-        For 2025. Does not provide accuracte values for incomes of $1,000,000+.
+        For 2025. May not provide accurate values for incomes of $1,000,000+.
         """
 
         result = 0.0
-
+        
+        # Tax brackets by state
         brackets = {
                     "CA":{
                           1:[0,10757,0.01],
@@ -133,7 +135,7 @@ class income_comparison():
                           6:[70607,360660,0.093],
                           7:[360660,432788,0.103],
                           8:[432788,721315,0.113],
-                          9:[721315,1e6,0.123]
+                          9:[721315,1e6,0.123],
                         },
                     "CT":{
                           1:[0,10000,0.02],
@@ -142,16 +144,31 @@ class income_comparison():
                           4:[100000,200000,0.06],
                           5:[200000,250000,0.065],
                           6:[250000,500000,0.069],
-                          7:[500000,1e6,0.0699]
+                          7:[500000,1e6,0.0699],
+                        },
+                    "OR":{
+                          1:[0,4300,0.0475],
+                          2:[4300,10750,0.0675],
+                          3:[10750,125000,0.0875],
+                          4:[125000,1e6,0.099],
+                        },
+                    "WA":{
+                          1:[0,1e6,0],
+                        },
+                    "WI":{
+                          1:[0,14320,0.035],
+                          2:[14320,28640,0.044],
+                          3:[28640,315310,0.053],
+                          4:[315310,1e6,0.0765],
                         }
         }
 
         if status == "single":
 
-            for state_ in brackets.keys():
+            #for state_ in brackets.keys():
 
                 try:
-                    if state_ == state:
+                    if state in brackets:
                         for bracket in brackets[state].values():
 
                             lower_bracket_boundary = bracket[0]
