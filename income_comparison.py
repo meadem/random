@@ -1,86 +1,94 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-"""
-To add:
- - social security deduction?
- - print method for exporting calculated values and saving them
-# it would be cool to have a method that figures out how much you'd have to make in a new state to match your current cash
 
-"""
+'''
+To do:
+ - Add other detuctions? social security deduction? others?
+ - write match() method for determining income required in a new location to reach disposable income parity with current income and location.
+'''
 
 
 class income_comparison():
-    
-    def __init__(self, offer, state, COL_difference, 
-                 current_income, current_state, 
-                 fixed_expenses, current_flex_expenses):
+    '''
+    Compare job offers across U.S. locations by taking into account gross income, local cost-of-living, and state and federal taxes.
+    '''
+
+    def __init__(self, 
+                 current_state=None, 
+                 current_income=None, 
+                 fixed_expenses_monthly=None, 
+                 flex_expenses_monthly=None
+                 ):
         
-        
-        self.COL_difference = COL_difference
-        self.fixed_expenses = fixed_expenses
-        self.current_flex_expenses = current_flex_expenses
-        self.current_expenses = fixed_expenses + current_flex_expenses
-        self.prospective_expenses = self.COL_adjusted_expenses()
+        self.offers = {}
+        self.offers['Current'] = {}
+        self.offers['Current']['State'] = current_state
+        self.offers['Current']['Payment'] = current_income
+        self.offers['Current']['Fixed Expenses'] = fixed_expenses_monthly * 12
+        self.offers['Current']['Flex Expenses'] = flex_expenses_monthly * 12
+        self.offers['Current']['Total Expenses'] = self.offers['Current']['Fixed Expenses'] + self.offers['Current']['Flex Expenses']
         
         # Calculate current AIF
-        self.calculate_adjusted_income_factor(current_income, "CA", current=True)
+        self.calculate_adjusted_income_factor('Current')
+    
+    def calculate_adjusted_income_factor(self, id):
+        '''
+        Calculate Adjusted Income Factor (AIF) as tax-adjusted income divided by COL-adjusted expenses.
+        '''
+        if id is None:
+            return print("ERROR: Offer id is required to store AIF value.")
         
+        state = self.offers[id]['State']
+        income = self.offers[id]['Payment']
+        expenses = self.offers[id]['Total Expenses']  # these should already be COL-adjusted
+
+        federal_tax_burden = self.federal_tax_burden(id)
+        state_tax_burden = self.state_tax_burden(id)
+        tax_burden = federal_tax_burden + state_tax_burden
+        tax_adjusted_income = income - tax_burden
+        AIF = tax_adjusted_income / expenses
+
+        self.offers[id]['Federal Tax Burden'] = federal_tax_burden
+        self.offers[id]['State Tax Burden'] = state_tax_burden
+        self.offers[id]['Tax Burden'] = tax_burden
+        self.offers[id]['Tax Adjusted Income'] = tax_adjusted_income
+        self.offers[id]['Monthly Disposable Income'] = (tax_adjusted_income - expenses)/12
+        self.offers[id]['AIF'] = AIF
+    
+    def COL_adjusted_expenses(self, id):
+        '''
+        Apply Cost-of-Living difference to expenses for the specified offer.
+        '''
+        
+        fixed_expenses = self.offers['Current']['Fixed Expenses']
+        flex_expenses = self.offers['Current']['Flex Expenses']
+        COL_difference = self.offers[id]['COL Difference']
+        adjusted_flex_expenses = flex_expenses * ( 1 + COL_difference )
+        result = fixed_expenses + adjusted_flex_expenses
+        return result
+
+    def compare(self, id=None, state=None, payment=None,  COL_difference=None):
+        '''
+        Register an offer for comparison against the null offer.
+        NOTE: COL_difference should be provided as a percent difference, e.g., -0.10 for a payment offer 10% less than current income.
+        '''
+        
+        self.offers[id] = {}
+        self.offers[id]['State'] = state
+        self.offers[id]['Payment'] = payment
+        self.offers[id]['COL Difference'] = COL_difference
+        self.offers[id]['Total Expenses'] = self.COL_adjusted_expenses(id)
+
         # Calculate prospective AIF
-        self.calculate_adjusted_income_factor(offer, state)
+        self.calculate_adjusted_income_factor(id)
     
-    
-    def calculate_adjusted_income_factor(self, income, state, current=False):
-        
-        if current:
-            federal_tax_burden = self.federal_tax_burden(income, status="single")
-            state_tax_burden = self.state_tax_burden(income, state=state, status="single")
-            tax_burden = self.tax_burden(federal_tax_burden, state_tax_burden)
-            tax_adjusted_income = self.tax_adjusted_offer(income, tax_burden)
-            current_AIF = self.adjusted_income_factor(tax_adjusted_income, self.current_expenses)
-        
-            self.current_federal_tax_burden = federal_tax_burden
-            self.current_state_tax_burden = state_tax_burden
-            self.current_tax_burden = tax_burden
-            self.current_tax_adjusted_income = tax_adjusted_income
-            self.current_AIF = current_AIF
-        
-        else:
-            federal_tax_burden = self.federal_tax_burden(income, status="single")
-            state_tax_burden = self.state_tax_burden(income, state=state, status="single")
-            tax_burden = self.tax_burden(federal_tax_burden, state_tax_burden)
-            tax_adjusted_income = self.tax_adjusted_offer(income, tax_burden)
-            AIF = self.adjusted_income_factor(tax_adjusted_income, self.prospective_expenses)
-        
-            self.prospective_federal_tax_burden = federal_tax_burden
-            self.prospective_state_tax_burden = state_tax_burden
-            self.prospective_tax_burden = tax_burden
-            self.prospective_tax_adjusted_income = tax_adjusted_income
-            self.prospective_AIF = AIF
-    
-    
-    def adjusted_income_factor(self, tax_adjusted_offer, COL_adjusted_expenses):
-        result = tax_adjusted_offer / COL_adjusted_expenses
-        return result
-
-
-    def tax_adjusted_offer(self, offer, tax_burden):
-        result = offer - tax_burden
-        self.adjusted_offer = result
-        return result
-
-
-    def tax_burden(self, federal_tax_burden, state_tax_burden):
-        result = federal_tax_burden + state_tax_burden
-        self.tax_burden
-        return result
-
-
-    def federal_tax_burden(self, income, status="single"):
+    def federal_tax_burden(self, id, status="single"):
         """
         For 2025. Does not provide accuracte values for incomes of $1,000,000+.
         """
 
+        income = self.offers[id]['Payment']
         result = 0.0
 
         brackets = {
@@ -116,12 +124,60 @@ class income_comparison():
 
         return result
 
+    def match(self, state, COL_difference):
+        '''
+        Returns the offer amount required to match the current spending cash (i.e., disposable income parity).
+        use  self.offers[id]['Monthly Disposable Income']
+        '''
 
-    def state_tax_burden(self, income, state="CA", status="single"):
+    def report(self):
+        '''
+        Print a summary of the offers and how they compare.
+        '''
+        
+        # print table header
+        print('%-30s%-15s%-15s%-15s%-15s%-15s%-15s' 
+              % 
+              (' ',  
+               'STATE', 
+               'NET INCOME', 
+               'EXPENSES',
+               'DISP. INCOME', 
+               '<-- CHANGE', 
+               'AIF'
+               ))
+        print('%-30s%-15s%-15s%-15s%-15s%-15s%-15s' 
+              % 
+              ('------------------------------', 
+               '---------------', 
+               '---------------', 
+               '---------------', 
+               '---------------', 
+               '---------------', 
+               '---------------'
+               ))
+        
+        # print table entries
+        for offer in self.offers:
+            disposable_delta = self.offers[offer]['Monthly Disposable Income'] - self.offers['Current']['Monthly Disposable Income']
+            print('%-30s%-15s%-15s%-15s%-15s%-15s%-15s' 
+                  % 
+                  (offer, 
+                   self.offers[offer]['State'], 
+                   f"${self.offers[offer]['Tax Adjusted Income']:.2f}", 
+                   f"${self.offers[offer]['Total Expenses']:.2f}", 
+                   f"${self.offers[offer]['Monthly Disposable Income']:.2f}", 
+                   f"${disposable_delta:.2f}", 
+                   f"{self.offers[offer]['AIF']:.2f}"
+                   ))
+    
+    def state_tax_burden(self, id, status="single"):
         """
         For 2025. May not provide accurate values for incomes of $1,000,000+.
         """
 
+        state = self.offers[id]['State']
+        income = self.offers[id]['Payment']
         result = 0.0
         
         # Tax brackets by state
@@ -192,64 +248,4 @@ class income_comparison():
             raise NameError("Filing status '" + status + "' was not found. Only 'single' is enabled at this time.")
 
         return result
-
-
-    def COL_adjusted_expenses(self):
-        adjusted_flex_expenses = self.current_flex_expenses * ( 1 + self.COL_difference )   # COL_difference should be provided as a percent difference, e.g., -0.10 for 10% less
-        result = self.fixed_expenses + adjusted_flex_expenses
-        return result
-    
-    
-    def report(self):
-        print("=============================")
-        print("-----------CURRENT-----------")
-        print("=============================")
-        print(f"Federal tax burden = ${self.current_federal_tax_burden:.2f}")
-        print(f"State tax burden = ${self.current_state_tax_burden:.2f}")
-        print(f"Total tax burden = ${self.current_tax_burden:.2f}")
-        print(f"Tax adjusted income = ${self.current_tax_adjusted_income:.2f}")
-        print(f"Expenses = ${self.current_expenses:.2f}")
-        print(f"Adjusted Income Factor = {self.current_AIF:.2f}")
-        print("\n")
-        print("=============================")
-        print("---------PROSPECTIVE---------")
-        print("=============================")
-        print(f"Federal tax burden = ${self.prospective_federal_tax_burden:.2f}")
-        print(f"State tax burden = ${self.prospective_state_tax_burden:.2f}")
-        print(f"Total tax burden = ${self.prospective_tax_burden:.2f}")
-        print(f"Tax adjusted offer = ${self.prospective_tax_adjusted_income:.2f}")
-        print(f"expenses = ${self.prospective_expenses:.2f}")
-        print(f"Adjusted Income Factor = {self.prospective_AIF:.2f}")
-        print("\n")
-        print("=============================")
-        print("-----------SUMMARY-----------")
-        print("=============================")
-        self.analyze_prospect()
-    
-    
-    def analyze_prospect(self):
-        statement1 = print(f"Current AIF = {self.current_AIF:.2f}")
-        statement2 = print(f"Prospective AIF = {self.prospective_AIF:.2f}")
-        line_break = print("\n")
-        
-        disposable_current = self.current_tax_adjusted_income - self.current_expenses
-        disposable_prospective = self.prospective_tax_adjusted_income - self.prospective_expenses
-        disposable_delta = disposable_prospective - disposable_current
-        
-        ratio = self.prospective_AIF / self.current_AIF
-        
-        if ratio > 1:
-            statement3 = print(f"Offer has a favorable AIF that is {ratio:.2f}x larger than current AIF, indicating a positive prospect.")
-        else:
-            statement3 = print(f"Offer has an unfavorable AIF that is {ratio:.2f}x that of the current AIF, indicating an uninviting prospect.")
-        
-        if disposable_delta > 0:
-            statement4 = print(f"There is a projected ${disposable_delta:.2f} increase in spending cash (${disposable_delta/12:.2f}/month).")
-        elif disposable_delta == 0:
-            statement4 = print(f"There is no projected change in spending cash! It's exactly the same.. spooky...")
-        else:
-            statement4 = print(f"There is a projected ${abs(disposable_delta):.2f} decrease in spending cash (${abs(disposable_delta)/12:.2f}/month).")
-    
-        return statement1, statement2, line_break, statement3, statement4
-    
     
