@@ -65,14 +65,7 @@ prospects.report()
 
 Which produces the following print-out: 
 
-
-                              STATE          NET INCOME     EXPENSES       DISP. INCOME   <-- CHANGE     AIF            
-------------------------------------------------------------------------------------------------------------------------
-Current                       CA             $88316.36      $80160.00      $679.70        $0.00          1.10           
-offer 1                       WA             $67486.12      $57282.00      $850.34        $170.65        1.18           
-offer 2                       CT             $85403.14      $64536.00      $1738.93       $1059.23       1.32           
-offer 3                       WI             $78172.76      $58956.00      $1601.40       $921.70        1.33           
-offer 4                       CA             $97320.86      $92994.00      $360.57        $-319.13       1.05           
+![image](https://github.com/user-attachments/assets/1774978e-f0cc-4492-8eb3-85cae506d6b9)
 
 
 (AIF is Adjusted Income Factor, a term that I made up that represents tax-adjusted income divided by COL-adjusted expenses.)
