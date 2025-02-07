@@ -7,52 +7,72 @@ Currently, the following states are available: OR, WA, CA, WI, CT
 
 Taken into account for the comparison are:
 - monetary compensation
-- state income tax (filing Single only, for now) 
+- state income tax (filing Single is the only available option, for now) 
 - local cost-of-living (using the [Forbes 2025 Cost of Living Calculator](https://www.forbes.com/advisor/mortgages/real-estate/cost-of-living-calculator/))
 -----------------------------
 
-After the package is imported, we need to define the following: 
-- current income (or other income to be compared)
-- current state
-- monthly flex expenses
-- monthly fixed expenses
+After the package is imported, we instantiate an Income Comparison object by passing it some information about your current job position: 
 
 ```python
-from income_comparison import income_comparison as compare
+from income_comparison import income_comparison
 
-CURRENT_INCOME = 100000
-CURRENT_STATE = "CA"
-FLEX_EXPENSES_MONTHLY = 4650
-FIXED_EXPENSES_MONTHLY = 2030
 
-# Note to self: the calculation of yearly expenses should be moved into the code, since most people are more likely to have a picture of monthly expenses than yearly expenses, which can then be easily calculated as here.
-FLEX_EXPENSES_YEARLY = 12 * FLEX_EXPENSES_MONTHLY
-FIXED_EXPENSES_YEARLY = 12 * FIXED_EXPENSES_MONTHLY
+prospects = income_comparison(current_income = 116500,  # current position
+                         current_state = 'CA',          # Oakland, CA
+                         fixed_expenses_monthly = 2030, 
+                         flex_expenses_monthly = 4650
+                        )
 ```
 
-Next we define the offer:
+
+Next we define any offers we have, real or hypothetical:
 
 ```python
-OFFER = 60000
-STATE = "WA"
-COL_DIFFERENCE = -00.10     # value obtained from the Forbes Cost-of-Living Calculator
-                            # if new location has 10% lower COL, then this value should be -0.10, as it is here.
+prospects.compare(id='offer 1', 
+             state='WA', 
+             payment=80000, 
+             COL_difference=-00.41  # Richland, WA
+            )
+
+prospects.compare(id='offer 2', 
+             state='CT', 
+             payment=110000, 
+             COL_difference=-00.28 # New Haven, CT
+            )
+
+prospects.compare(id='offer 3', 
+             state='WI', 
+             payment=100000,
+             COL_difference=-00.38  # Milwaukee, WI
+            )
+
+prospects.compare(id='offer 4', 
+             state='CA', 
+             payment=130000,
+             COL_difference=00.23  # San Jose, CA
+            )
 ```
 
-The last variable represents the cost-of-living difference between the two locations, as pulled from the [Forbes Cost-of-Living Calculator](https://www.forbes.com/advisor/mortgages/real-estate/cost-of-living-calculator/) and formatted as a decimal percent value. I would love it if the code could pull this value automatically in the future. Maybe Forbes has some kind of API?..
 
-Now the offers can be compared by calling compare() like this:
+The last variable passed to each offer instance represents the cost-of-living difference between the two locations, as pulled from the [Forbes Cost-of-Living Calculator](https://www.forbes.com/advisor/mortgages/real-estate/cost-of-living-calculator/) and formatted as a decimal percent value. I would love it if the code could pull this value automatically in the future. Maybe Forbes has some kind of API?..
+
+Now we can print out a table summarizing everything like this:
 
 ```python
-prospect = compare(OFFER, STATE, COL_DIFFERENCE, 
-                         CURRENT_INCOME, CURRENT_STATE,
-                         FIXED_EXPENSES_YEARLY, FLEX_EXPENSES_YEARLY)
-
-prospect.report()
+prospects.report()
 ```
 
-Which produces the following print-out. AIF is Adjusted Income Factor, a term that I made up so I could store and retrieve the quantitative estimate of the comparison.
 
-**Also note the last line, which shows the most important result, the change in effective take-home cash.**
+Which produces the following print-out: 
 
-![image](https://github.com/user-attachments/assets/b4caa0b8-1523-4ba9-8909-4a9145adda1c)
+
+                              STATE          NET INCOME     EXPENSES       DISP. INCOME   <-- CHANGE     AIF            
+------------------------------------------------------------------------------------------------------------------------
+Current                       CA             $88316.36      $80160.00      $679.70        $0.00          1.10           
+offer 1                       WA             $67486.12      $57282.00      $850.34        $170.65        1.18           
+offer 2                       CT             $85403.14      $64536.00      $1738.93       $1059.23       1.32           
+offer 3                       WI             $78172.76      $58956.00      $1601.40       $921.70        1.33           
+offer 4                       CA             $97320.86      $92994.00      $360.57        $-319.13       1.05           
+
+
+(AIF is Adjusted Income Factor, a term that I made up that represents tax-adjusted income divided by COL-adjusted expenses.)
